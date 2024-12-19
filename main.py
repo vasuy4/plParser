@@ -31,9 +31,9 @@ def get_participants(soup: BeautifulSoup):
             info_dict["name"] = namee
             info_dict["birth_year"] = birth_year
             info_dict["weight"] = info[1][1]
-            country, area, town = info[1][2].split(",")[0:3]
+            country, region, town = info[1][2].split(",")[0:3]
             info_dict["country"] = country
-            info_dict["area"] = area[1:]
+            info_dict["region"] = region[1:]
             info_dict["town"] = town
             names[now_group].append(info_dict)
     return names
