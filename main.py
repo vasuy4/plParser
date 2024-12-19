@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-
+import re
 
 def print_links(soup: BeautifulSoup):
     a_links = soup.select("a")
@@ -47,17 +47,37 @@ soup = BeautifulSoup(response.text, "html.parser")
 
 persons = get_participants(soup)
 for person in persons["Мужчины"]:
-    print(person)
-    print("Получение ответа от allpowerlifting.com...")
-    base_url_all_pl = "https://allpowerlifting.com/lifters/"
+    base_url_all_pl = "https://allpowerlifting.com"
     url_all_pl = (
         base_url_all_pl
-        + f"?name={person["name"].replace(" ", "+")}&birth_year={person["birth_year"]}&gender=&search="
+        + f"/lifters/?name={person["name"].replace(" ", "+")}&birth_year=&gender=&search="
     )
-    print(url_all_pl)
+    print(f"Получение ответа от {url_all_pl}...")
     response = requests.get(url_all_pl)
-    print(response.text)
-    break
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    tr_elements = soup.select("tr")
+    find = []
+    for tr in tr_elements:
+        info = re.split(r"[\n ]+", tr.get_text())
+        if info[6] == person["birth_year"]:
+            href = tr.select("a")[0].get("href")
+            info.append(href)
+            find.append(info)
+    # print(find)
+
+    if len(find) > 0:
+        href = find[0][-1]
+        url_profile = base_url_all_pl + href
+        response = requests.get(url_profile)
+        soup = BeautifulSoup(response.text, "html.parser")
+        results = soup.select('td.text-center span.text-success')
+        best_results = []
+        for result in results:
+            best_results.append(float(result.get_text().replace(",", ".")))
+        person["results"] = best_results
+        print(person)
+
 
 # for group, nnn in names.items():
 #     print(f"---Group: {group}---")
