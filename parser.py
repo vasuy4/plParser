@@ -93,13 +93,13 @@ def get_participants(url: str) -> Tuple[Dict[str, List[Dict[str, str]]], str]:
     return names, "OK"
 
 
-# print("Получение ответа от powertable.ru...")
-# url = "https://powertable.ru/api/hs/p/nomination?nom=3226&list=&lg="  # "https://powertable.ru/api/hs/p/nomination?nom=2727&lg=&dsp=0675"
-# response = requests.get(url)
-#
-# soup = BeautifulSoup(response.text, "html.parser")
-#
-# persons = get_participants(soup)
-# print(persons)
-# for person in persons["Мужчины"]:
-#     print(person)
+if __name__ == '__main__':
+    print("Получение ответа от powertable.ru...")
+    url = "https://powertable.ru/api/hs/p/nomination?nom=3091&lg=&dsp=0307"  # "https://powertable.ru/api/hs/p/nomination?nom=2727&lg=&dsp=0675"
+
+    persons, status = get_participants(url)
+    print(persons)
+    for category, category_persons in persons.items():
+        print("---", category)
+        for person in category_persons:
+            print(person)

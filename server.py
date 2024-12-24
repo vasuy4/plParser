@@ -54,12 +54,15 @@ def update_page():
         persons, status = get_participants(url)
         if status == "OK":
             for category, category_persons in persons.items():
-                # new_p = soup.new_tag("p")
-                # new_p.string = category
-                # soup.body.append(new_p)
                 th = soup.new_tag("td")
                 th.string = category
-                th['style'] = "color: blue; font-weight: bold;"
+                if "девушки" in category.lower() or "юниорки" in category.lower() or "женщины" in category.lower():
+                    color = "deeppink"
+                elif "открытая" in category.lower() or "мастера" in category.lower():
+                    color = "#ff7600"  # что-то оранжевое
+                else:
+                    color = "blue"
+                th['style'] = f"color: {color}; font-weight: bold;"
                 table.append(th)
                 for person in category_persons:
                     cells_row = soup.new_tag("tr")
@@ -69,6 +72,7 @@ def update_page():
                              person["country"],
                              person["region"],
                              person["town"]]
+                    print(cells)
                     for cell in cells:
                         th = soup.new_tag("td")
                         th.string = cell
