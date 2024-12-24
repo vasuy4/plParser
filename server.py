@@ -15,7 +15,7 @@ def main_menu():
 def update_page():
     """Обновляет страницу по POST-запросу"""
     # Чтение HTML-файла
-    with open("templates/updated.html", "r", encoding="utf-8") as f:
+    with open("templates/index.html", "r", encoding="utf-8") as f:
         html_string = f.read()
 
     # Парсинг HTML с помощью BeautifulSoup
