@@ -1,9 +1,35 @@
 from flask import Flask, render_template, request
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from parser import get_participants
-from typing import Dict, List
+import datetime
 
 app = Flask(__name__)
+
+
+def base_table(soup: BeautifulSoup) -> Tag:
+    """
+    Создание базовой таблицы (с заголовками)
+    :param soup: soup на html страницу
+    :return: базовая таблица
+    """
+    # Создаем таблицу
+    table = soup.new_tag("table", border="1", cellspacing="0", cellpadding="10")
+
+    # Создаем строку заголовков
+    header_row = soup.new_tag("tr")
+
+    # Добавляем заголовки в строку
+    headers = ["name", "weight", "y.o", "country", "region", "town"]
+    for header in headers:
+        th = soup.new_tag("td")
+        th.string = header
+        header_row.append(th)
+
+    # Добавляем строку заголовков в таблицу
+    table.append(header_row)
+
+    # Добавляем таблицу в тело страницы
+    return table
 
 
 @app.route("/")
@@ -21,19 +47,46 @@ def update_page():
     # Парсинг HTML с помощью BeautifulSoup
     soup = BeautifulSoup(html_string, "html.parser")
 
+    table = base_table(soup)
+
     url: str = request.form.get("url_nomination")
     if url:
-        persons: Dict[str, List[Dict[str, str]]] = get_participants(url)
+        persons, status = get_participants(url)
+        if status == "OK":
+            for category, category_persons in persons.items():
+                # new_p = soup.new_tag("p")
+                # new_p.string = category
+                # soup.body.append(new_p)
+                th = soup.new_tag("td")
+                th.string = category
+                th['style'] = "color: blue; font-weight: bold;"
+                table.append(th)
+                for person in category_persons:
+                    cells_row = soup.new_tag("tr")
+                    cells = [person["name"],
+                             person["weight"],
+                             str(datetime.date.today().year - int(person["birth_year"])),
+                             person["country"],
+                             person["region"],
+                             person["town"]]
+                    for cell in cells:
+                        th = soup.new_tag("td")
+                        th.string = cell
+                        cells_row.append(th)
 
-        for person in persons["Мужчины"]:
+                    table.append(cells_row)
+            soup.body.append(table)
+        else:
             new_p = soup.new_tag("p")
-            new_p.string = person["name"]
+            new_p.string = status
             soup.body.append(new_p)
-
         # Возвращение измененного HTML
         return soup.prettify()
     else:
-        return render_template("index.html")
+        new_p = soup.new_tag("p")
+        new_p.string = "Void input"
+        soup.body.append(new_p)
+        return soup.prettify()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import re
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 
 def allPowerlifting(persons: dict) -> None:
@@ -50,14 +50,18 @@ def print_links(soup: BeautifulSoup):
         print(link.get_text())
 
 
-def get_participants(url: str) -> Dict[str, List[Dict[str, str]]]:
+def get_participants(url: str) -> Tuple[Dict[str, List[Dict[str, str]]], str]:
     """
     Получить список участников из номинации с сайта powertable.ru
     :param url: url страницы номинации
-    :return: словарь участников {'Мужчины': [{'name': 'Борух Сергей', 'birth_year': '1988', 'weight': '82,5', 'country':
-    'Россия', 'region': 'Оренбургская область', 'town': 'Сорочинск'}, ...]}
+    :return: кортеж, содержащий статус выполнения и словарь участников {'Мужчины': [{'name': 'Борух Сергей',
+    'birth_year': '1988', 'weight': '82,5', 'country': 'Россия', 'region': 'Оренбургская область', 'town': 'Сорочинск'},
+    ...]}
     """
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except requests.exceptions.MissingSchema:
+        return {}, "Invalid URL"
     soup = BeautifulSoup(response.text, "html.parser")
 
     tr = soup.select("tr.const_c, tr.group_l")
@@ -86,7 +90,7 @@ def get_participants(url: str) -> Dict[str, List[Dict[str, str]]]:
             info_dict["region"] = region[1:]
             info_dict["town"] = town
             names[now_group].append(info_dict)
-    return names
+    return names, "OK"
 
 
 # print("Получение ответа от powertable.ru...")
