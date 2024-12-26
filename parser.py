@@ -4,43 +4,60 @@ import re
 from typing import Dict, List, Tuple
 
 
-def allPowerlifting(persons: dict) -> None:
+BASE_URL_ALL_PL: str = "https://allpowerlifting.com"
+
+
+def get_all_athletes(person: Dict[str, str]) -> List[List[str]]:
+    """
+    Получить список всех спортсменов, имеющих такое же имя, фамилию и год рождения как у person
+    :param person: словарь данных о спортсмене (имя, вес, город, дата рождения и т.д.)
+    :return: список найденных спортсменов
+    """
+    # Формирование ссылки на страницу с найденными атлетами
+    url_all_pl = (
+            BASE_URL_ALL_PL
+            + f"/lifters/?name={person["name"].replace(" ", "+")}&birth_year=&gender=&search="
+    )
+
+    print(f"Получение ответа от {url_all_pl}...")
+    response = requests.get(url_all_pl)
+
+    soup = BeautifulSoup(response.text, "html.parser")
+    tr_elements = soup.select("tr")
+    find: List[List[str]] = []
+    for tr in tr_elements:
+        # Split данных из табл. в список. (ID, пол, имя, откуда, год рождения, выступления, рекорды, медиа, кто добавил)
+        info: List[str] = re.split(r"[\n ]+", tr.get_text())
+        if info[6] == person["birth_year"]:  # Проверка на совпадение возраста
+            href = tr.select("a")[0].get("href")  # Получение ссылки на спортсмена
+            info.append(href)  # Добавление ссылки в общий список информации о спортсмене
+            find.append(info)  # Добавление найденного спортсмена, подходящего по дате рождения
+    return find
+
+
+def get_best_results(url_athlete: str):
+    response = requests.get(url_athlete)  # Получение личной страницы спортсмена на allpl
+    soup = BeautifulSoup(response.text, "html.parser")
+    results = soup.select('td.text-center span.text-success')
+    best_results = []
+    for result in results:
+        best_results.append(float(result.get_text().replace(",", ".")))
+    return best_results
+
+
+def allPowerlifting(person: Dict[str, str]) -> Dict[str, str]:
     """
     Получить данные, рекорды спортсменов с сайта allpowerlifting.com
-    :param persons: словарь, полученный из функции get_participants
-    :return:
+    :param person: словарь, описывающий данные спортсмена (имя, вес, город, дата рождения и т.д.)
+    :return: объект person, дополненный рекордами
     """
-    for person in persons["Мужчины"]:
-        base_url_all_pl = "https://allpowerlifting.com"
-        url_all_pl = (
-                base_url_all_pl
-                + f"/lifters/?name={person["name"].replace(" ", "+")}&birth_year=&gender=&search="
-        )
-        print(f"Получение ответа от {url_all_pl}...")
-        response = requests.get(url_all_pl)
+    find: List[List[str]] = get_all_athletes(person)
 
-        soup = BeautifulSoup(response.text, "html.parser")
-        tr_elements = soup.select("tr")
-        find = []
-        for tr in tr_elements:
-            info = re.split(r"[\n ]+", tr.get_text())
-            if info[6] == person["birth_year"]:
-                href = tr.select("a")[0].get("href")
-                info.append(href)
-                find.append(info)
-        # print(find)
-
-        if len(find) > 0:
-            href = find[0][-1]
-            url_profile = base_url_all_pl + href
-            response = requests.get(url_profile)
-            soup = BeautifulSoup(response.text, "html.parser")
-            results = soup.select('td.text-center span.text-success')
-            best_results = []
-            for result in results:
-                best_results.append(float(result.get_text().replace(",", ".")))
-            person["results"] = best_results
-            print(person)
+    if len(find) > 0:
+        href = find[0][-1]
+        best_results = get_best_results(BASE_URL_ALL_PL + href)
+        person["results"] = str(best_results)
+    return person
 
 
 def print_links(soup: BeautifulSoup):
@@ -94,12 +111,13 @@ def get_participants(url: str) -> Tuple[Dict[str, List[Dict[str, str]]], str]:
 
 
 if __name__ == '__main__':
-    print("Получение ответа от powertable.ru...")
-    url = "https://powertable.ru/api/hs/p/nomination?nom=3091&lg=&dsp=0307"  # "https://powertable.ru/api/hs/p/nomination?nom=2727&lg=&dsp=0675"
-
-    persons, status = get_participants(url)
-    print(persons)
-    for category, category_persons in persons.items():
-        print("---", category)
-        for person in category_persons:
-            print(person)
+    # print("Получение ответа от powertable.ru...")
+    # Aurl = "https://powertable.ru/api/hs/p/nomination?nom=3091&lg=&dsp=0307"  # "https://powertable.ru/api/hs/p/nomination?nom=2727&lg=&dsp=0675"
+    #
+    # Apersons, Astatus = get_participants(Aurl)
+    # print(Apersons)
+    # for Acategory, Acategory_persons in Apersons.items():
+    #     print("---", Acategory)
+    #     for Aperson in Acategory_persons:
+    #         print(Aperson)
+    print(get_best_results("https://allpowerlifting.com/lifters/RUS/ryzhov-artem-227356"))
