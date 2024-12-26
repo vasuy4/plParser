@@ -19,7 +19,7 @@ def base_table(soup: BeautifulSoup) -> Tag:
     header_row = soup.new_tag("tr")
 
     # Добавляем заголовки в строку
-    headers = ["name", "weight", "y.o", "country", "region", "town"]
+    headers = ["№", "name", "weight", "y.o", "country", "region", "town"]
     for header in headers:
         th = soup.new_tag("td")
         th.string = header
@@ -54,6 +54,8 @@ def update_page():
         persons, status = get_participants(url)
         if status == "OK":
             for category, category_persons in persons.items():
+                cells_category_row = soup.new_tag("tr")
+
                 th = soup.new_tag("td")
                 th.string = category
                 if "девушки" in category.lower() or "юниорки" in category.lower() or "женщины" in category.lower():
@@ -63,22 +65,32 @@ def update_page():
                 else:
                     color = "blue"
                 th['style'] = f"color: {color}; font-weight: bold;"
-                table.append(th)
+                cells_category_row.append(soup.new_tag("td"))
+                cells_category_row.append(th)
+                table.append(cells_category_row)
+
+                position: int = 1
+                old_weight: str = ""
                 for person in category_persons:
+                    now_weight: str = person["weight"]
+                    if now_weight != old_weight:
+                        position = 1
                     cells_row = soup.new_tag("tr")
-                    cells = [person["name"],
-                             person["weight"],
+                    cells = [str(position),
+                             person["name"],
+                             now_weight,
                              str(datetime.date.today().year - int(person["birth_year"])),
                              person["country"],
                              person["region"],
                              person["town"]]
-                    print(cells)
                     for cell in cells:
                         th = soup.new_tag("td")
                         th.string = cell
                         cells_row.append(th)
 
                     table.append(cells_row)
+                    position += 1
+                    old_weight = person["weight"]
             soup.body.append(table)
         else:
             new_p = soup.new_tag("p")
